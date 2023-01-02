@@ -1,0 +1,96 @@
+---
+title: "R_anxiety"
+---
+
+```{r}
+library(corpcor)
+library(GPArotation)
+library(psych)
+library(readr)
+library(dplyr)
+```
+
+
+```{r}
+#read data
+#the data comes from https://www.discoveringstatistics.com/repository/ds_data_files.zip
+raqData<-read.delim("D:/Tuttlingen/ds_data_files/ds_data_files/R Data Files/raq.dat", header = TRUE)
+raqData <- select(raqData, c('Q03','Q06','Q07','Q13','Q18','Q20','Q21'))
+
+raqData <- rename(raqData, 
+              "std_abweichungen" = Q03,
+              "erfahrung" = Q06,
+              "computerhass" = Q07,
+              "inkompetenz" = Q13,
+              "abstuerzen" = Q18,
+              "eigenvektoren" = Q20,
+              "normalverteilung" = Q21)
+
+#reverse 'Standardabweichungen machen mich gluecklich'
+raqData$std_abweichungen <- min(raqData$std_abweichungen) - raqData$std_abweichungen + max(raqData$std_abweichungen)
+
+#make correlation matrix
+raqMatrix<-cor(raqData)
+round(raqMatrix, 2)
+
+
+```
+
+##Voraussetzungen (from Field, A., Miles, J., & Field, Z. (2012). Discovering statistics using R. Sage publications.)
+Bartlett: A significant test tells us that the R-matrix is not an identity matrix; therefore, there are some relationships between the variables we
+hope to include in the analysis. 
+
+KMO: Kaiser (1974) recommends a bare minimum of .5 and that values between .5 and .7 are mediocre, values between .7 and .8 are good, values between .8 and .9 are great and values above .9 are superb (Hutcheson & Sofroniou, 1999). 
+
+Determinante: This value mus be greater than 0.00001
+```{r}
+cortest.bartlett(raqMatrix, n = 2571)
+KMO(raqMatrix)
+det(raqMatrix)
+```
+
+## PCA
+
+```{r}
+pc1 <- principal(raqMatrix, nfactors=length(raqMatrix[,1]), rotate = "none")
+pc1
+
+```
+
+## Scree Plot
+```{r}
+plot(pc1$values, type = "b")
+```
+
+## PCA2
+```{r}
+pc2 <- principal(raqMatrix, nfactors = 2, rotate = "none")
+pc2
+```
+
+
+## PCA3
+```{r}
+pc3 <- principal(raqMatrix, nfactors = 2, rotate = "varimax")
+pc3
+```
+
+## PCA2
+```{r}
+print.psych(pc3, cut = 0.3, sort = TRUE)
+```
+
+## plot
+```{r}
+library(ggplot2)
+
+Faktor1 <- c(0.30849456,0.83485169,0.71075022,0.73053130,0.75311159,-0.02174098,0.35075779 )
+Faktor2 <- c(0.63171220,-0.01443768,0.32284905,0.21367819,0.28322536 ,0.84635217, 0.73686853 )
+
+df <- data.frame(Faktor1, Faktor2)
+
+
+ggplot(df, aes(Faktor1, Faktor2)) + geom_point() + ylim(-1,1) + xlim(-1,1)
+ggsave("D:/Tuttlingen/factors1_2.png", width = 3, height = 3)
+```
+
